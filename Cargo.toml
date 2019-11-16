@@ -1,0 +1,11 @@
+[package]
+name = "filepoller"
+version = "0.1.0"
+authors = ["hxtk <peter@psanders.me>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+httpdate = "0.3.2"
+reqwest = "0.9.22"
