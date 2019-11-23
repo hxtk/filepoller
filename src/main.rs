@@ -11,7 +11,13 @@ use reqwest::Url;
 
 use scheduler::TaskScheduler;
 
+/// Given an HTTP client, filename, and url, return true if the HTTP last-modified time
+/// for the file at the URL is more recent than the filename's OS last-modified time.
+///
+/// If the network is unreachable, the local file is unreachable, or the remote header is
+/// bad or missing, then it is assumed that the remote file is newer.
 fn newer_remote(client: &Client, filename: &str, url: &Url) -> bool {
+    // Local file last-modified time.
     let modtime = match fs::metadata(filename) {
         Err(e) => {
             println!("could not stat file: {}", e);
@@ -26,6 +32,7 @@ fn newer_remote(client: &Client, filename: &str, url: &Url) -> bool {
         },
     };
 
+    // Get last-modified time of remote file.
     match client.head(Url::parse(url.as_str()).unwrap()).send() {
         Err(e) => {
             println!("could not head remote: {}", e);
@@ -61,6 +68,7 @@ fn newer_remote(client: &Client, filename: &str, url: &Url) -> bool {
     }
 }
 
+/// task to fetch a file and save it to a destination of the remote is newer.
 fn task(url_str: &str, dest: &str) {
     let url = match Url::parse(url_str) {
         Ok(x) => x,
