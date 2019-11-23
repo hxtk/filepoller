@@ -33,7 +33,7 @@ fn newer_remote(client: &Client, filename: &str, url: &Url) -> bool {
     };
 
     // Get last-modified time of remote file.
-    match client.head(Url::parse(url.as_str()).unwrap()).send() {
+    match client.head(url.clone()).send() {
         Err(e) => {
             println!("could not head remote: {}", e);
             true
