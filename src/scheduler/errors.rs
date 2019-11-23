@@ -1,7 +1,10 @@
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::sync::mpsc::Sender;
+use std::sync::{PoisonError, MutexGuard, RwLockReadGuard, RwLockWriteGuard};
 
 #[derive(Debug)]
 pub enum SchedulerError {
@@ -29,5 +32,23 @@ impl Display for SchedulerError {
                 write!(f, "task thread died unexpectedly")
             }
         }
+    }
+}
+
+impl From<PoisonError<RwLockReadGuard<'_, HashMap<usize, Sender<()>>>>> for SchedulerError {
+    fn from(_error: PoisonError<RwLockReadGuard<'_, HashMap<usize, Sender<()>>>>) -> Self {
+        SchedulerError::Poisoned
+    }
+}
+
+impl From<PoisonError<RwLockWriteGuard<'_, HashMap<usize, Sender<()>>>>> for SchedulerError {
+    fn from(_error: PoisonError<RwLockWriteGuard<'_, HashMap<usize, Sender<()>>>>) -> Self {
+        SchedulerError::Poisoned
+    }
+}
+
+impl From<PoisonError<MutexGuard<'_, bool>>> for SchedulerError {
+    fn from(_error: PoisonError<MutexGuard<'_, bool>>) -> Self {
+        SchedulerError::Poisoned
     }
 }

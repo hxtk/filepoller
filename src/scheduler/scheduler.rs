@@ -37,10 +37,7 @@ impl TaskScheduler {
         frequency: Duration,
         job: impl Fn() + Send + Sync + 'static,
     ) -> Result<usize, errors::SchedulerError> {
-        let mut tasks = match self.tasks.write() {
-            Ok(x) => Ok(x),
-            Err(_) => Err(errors::SchedulerError::Poisoned),
-        }?;
+        let mut tasks = self.tasks.write()?;
 
         let task_id: usize = match tasks.keys().max() {
             Some(x) => x + 1,
@@ -79,10 +76,7 @@ impl TaskScheduler {
     /// `task_id` is not known to the scheduler and
     /// `errors::scheduler::Poisoned`, which occurs if a
     pub fn remove_task(&self, task_id: usize) -> Result<(), errors::SchedulerError> {
-        let mut tasks = match self.tasks.write() {
-            Ok(x) => Ok(x),
-            Err(_) => Err(errors::SchedulerError::Poisoned),
-        }?;
+        let mut tasks = self.tasks.write()?;
 
         match tasks.remove(&task_id) {
             Some(_) => Ok(()),
@@ -113,24 +107,17 @@ impl TaskScheduler {
     /// If an error occurs then this function will return a corresponding `Err`, otherwise
     /// it will return an empty `Ok`.
     pub fn run(&self, resolution: Duration) -> Result<(), errors::SchedulerError> {
-        match self.running.lock() {
-            Ok(mut running) => {
-                match *running {
-                    true => Err(errors::SchedulerError::AlreadyRunning),
-                    false => {
-                        *running = true;
-                        Ok(())
-                    }
-                }
-            },
-            Err(_) => Err(errors::SchedulerError::Poisoned),
+        let mut running = self.running.lock()?;
+        match *running {
+            true => Err(errors::SchedulerError::AlreadyRunning),
+            false => {
+                *running = true;
+                Ok(())
+            }
         }?;
 
         loop {
-            let tasks = match self.tasks.read() {
-                Ok(x) => Ok(x),
-                Err(_) => Err(errors::SchedulerError::Poisoned),
-            }?;
+            let tasks = self.tasks.read()?;
 
             tasks
                 .iter()
