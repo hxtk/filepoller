@@ -57,6 +57,8 @@ impl TaskScheduler {
                             thread::spawn(move || task());
                         }
                     }
+                    // This is a normal exit condition that will occur when
+                    // the context running the scheduler dies.
                     Err(_) => return,
                 }
             }
@@ -116,7 +118,7 @@ impl TaskScheduler {
             }
         }?;
 
-        loop {
+        while *self.running.lock()? {
             let tasks = self.tasks.read()?;
 
             tasks
@@ -129,5 +131,7 @@ impl TaskScheduler {
 
             thread::sleep(resolution);
         }
+
+        Ok(())
     }
 }
