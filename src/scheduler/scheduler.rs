@@ -118,6 +118,10 @@ impl TaskScheduler {
             }
         }?;
 
+        // Drop the lock we have on self.running so that we are able
+        // to reacquire it below without deadlock.
+        std::mem::drop(running);
+
         while *self.running.lock()? {
             let tasks = self.tasks.read()?;
 
