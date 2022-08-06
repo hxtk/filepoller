@@ -122,9 +122,19 @@ impl TaskScheduler {
         // to reacquire it below without deadlock.
         std::mem::drop(running);
 
-        while *self.running.lock()? {
-            let tasks = self.tasks.read()?;
+        loop {
+            // Make sure we're still supposed to be running, or exit.
+            let running = self.running.lock()?;
+            if !*running {
+                break;
+            }
 
+            // Drop the lock so that another thread requesting we stop
+            // does not get stuck.
+            std::mem::drop(running);
+
+            // Send a tick to each task.
+            let tasks = self.tasks.read()?;
             tasks
                 .iter()
                 .map(|(_, channel)| channel.send(()))
@@ -133,6 +143,7 @@ impl TaskScheduler {
                     Err(_) => Err(errors::SchedulerError::ConsumerDied),
                 })?;
 
+            // Wait for the next tick.
             thread::sleep(resolution);
         }
 
